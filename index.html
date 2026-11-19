@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#070d1f">
+<meta name="color-scheme" content="dark">
+<title>FotoLocalizador</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="etiquetas.css">
+</head>
+<body>
+<main>
+
+  <!-- ===== Cabeçalho ===== -->
+  <header class="top">
+    <h1><span class="db" aria-hidden="true">★</span> Foto<span>Localizador</span></h1>
+    <div class="top-actions">
+      <button type="button" id="bTrash">Lixeira (0)</button>
+      <details class="menu" id="menu">
+        <summary>⚙ Opções</summary>
+        <div class="menu-pop">
+          <button type="button" id="bExp">Exportar backup</button>
+          <button type="button" id="bImp">Importar backup</button>
+          <button type="button" id="bRes" aria-pressed="true">Reduzir fotos grandes: ligado</button>
+        </div>
+      </details>
+    </div>
+    <button type="button" id="bSync" class="pri" hidden>↻ Dados mudaram em outra aba: recarregar</button>
+    <button type="button" id="bUpd" class="pri" hidden>↻ Nova versão instalada: recarregar</button>
+    <input type="file" id="fImp" accept="application/zip,.zip,application/json,.json" hidden>
+  </header>
+
+  <!-- ===== Pesquisa ===== -->
+  <form id="sf" class="row" role="search">
+    <label for="q" class="inline-label">Localizar</label>
+    <input id="q" type="search" placeholder="Digite nome, código, descrição ou tag…" autocomplete="off">
+    <button type="submit" class="pri">Procurar</button>
+  </form>
+  <div id="res" aria-live="polite"></div>
+
+  <!-- ===== Abas e fotos ===== -->
+  <section class="card" id="tabsCard" aria-label="Abas e fotos">
+    <div class="row">
+      <div id="tabs" role="tablist"></div>
+      <button type="button" id="tNew">+ Nova aba</button>
+      <button type="button" id="tRen">Renomear</button>
+      <button type="button" id="tDel" class="ghost">Excluir aba</button>
+    </div>
+    <div class="row row-photos">
+      <button type="button" id="pAdd" class="pri">Adicionar fotos</button>
+      <input type="file" id="fPh" accept="image/jpeg,image/png,image/webp" multiple hidden>
+      <span class="mut" id="pInfo"></span>
+      <span class="mut" id="stor"></span>
+      <span class="mut">ou arraste e solte as fotos aqui</span>
+    </div>
+    <div id="thumbs"></div>
+  </section>
+
+  <div id="work">
+
+    <!-- ===== Visualizador ===== -->
+    <section class="card" id="vcard" aria-label="Fotografia">
+      <p id="empty" class="mut">Nenhuma fotografia nesta aba. Use “Adicionar fotos”.</p>
+
+      <div id="viewer" hidden>
+        <div class="vbar vtop">
+          <div class="vtitle"><strong id="pname" class="ptitle"></strong><small id="pfile" class="mut"></small></div>
+          <div class="btns">
+            <button type="button" id="pPrev" aria-label="Foto anterior">◀</button>
+            <button type="button" id="pNext" aria-label="Próxima foto">▶</button>
+          </div>
+          <button type="button" id="fsExit" class="fsonly danger">✕ Sair</button>
+        </div>
+
+        <div class="vbar vtools">
+          <div class="btns" role="group" aria-label="Zoom">
+            <button type="button" id="zOut" aria-label="Diminuir zoom">−</button>
+            <span id="zl" aria-live="polite">100%</span>
+            <button type="button" id="zIn" aria-label="Aumentar zoom">+</button>
+            <button type="button" id="zFit">Ajustar</button>
+            <button type="button" id="zCtr">Centralizar</button>
+          </div>
+          <div class="btns" role="group" aria-label="Marcação">
+            <button type="button" id="aNew" class="pri" aria-pressed="false">+ Marcação</button>
+            <button type="button" id="aRead">Ler etiquetas</button>
+            <button type="button" id="b3t" aria-pressed="true">Caixa 3D</button>
+            <button type="button" id="fs" aria-pressed="false">Tela cheia</button>
+          </div>
+        </div>
+
+        <div class="vbar vphoto nofs" role="group" aria-label="Ações da foto">
+          <button type="button" id="pLoc">Local / fileira</button>
+          <button type="button" id="pRen">Renomear</button>
+          <button type="button" id="pMvL" aria-label="Mover foto para antes">« Mover</button>
+          <button type="button" id="pMvR" aria-label="Mover foto para depois">Mover »</button>
+          <button type="button" id="pDel" class="ghost">Excluir</button>
+        </div>
+
+        <div id="stage"><div id="wrap"><img id="img" alt="" draggable="false"><div id="layer"></div></div></div>
+
+        <p class="mut" id="hint"></p>
+        <p class="mut leg nofs" aria-label="Legenda de cores"><b class="c-ativo"></b>ativo<b class="c-pendente"></b>pendente<b class="c-concluido"></b>concluído</p>
+        <div id="alist" class="chips" aria-label="Marcações desta foto"></div>
+      </div>
+    </section>
+
+    <!-- ===== Editor de marcação ===== -->
+    <section class="card" id="editor" hidden aria-label="Editor de marcação">
+      <div class="edHead">
+        <h2>Marcação</h2>
+        <span id="eState" class="mut" role="status" aria-live="polite"></span>
+        <button type="button" id="eFold" class="mini fsonly" aria-expanded="true">▾ Recolher</button>
+      </div>
+
+      <p id="eEmpty" class="mut" hidden>Nenhuma marcação selecionada. Toque em <b>+ Marcação</b> e arraste sobre a foto para desenhar uma, ou toque numa marcação existente para editá-la. O botão <b>Salvar</b> aparece aqui assim que houver uma marcação.</p>
+
+      <div class="edBody">
+        <div class="fgrid">
+          <div class="f f-name"><label for="eName">Nome</label><input id="eName" maxlength="120" autocomplete="off"></div>
+          <div class="f f-code"><label for="eCode">Código</label><input id="eCode" maxlength="60" placeholder="opcional" autocomplete="off"></div>
+          <div class="f f-desc"><label for="eDesc">Descrição</label><textarea id="eDesc" rows="3" maxlength="2000"></textarea></div>
+          <div class="f f-notes"><label for="eNotes">Observações</label><textarea id="eNotes" rows="2" maxlength="2000"></textarea></div>
+          <div class="f f-tags"><label for="eTags">Tags</label><input id="eTags" maxlength="200" placeholder="separe por vírgula" autocomplete="off"></div>
+          <div class="f f-stat"><label for="eStat">Status</label>
+            <select id="eStat"><option value="ativo">Ativo</option><option value="pendente">Pendente</option><option value="concluido">Concluído</option></select></div>
+        </div>
+        <details id="eEt"><summary>Dados da etiqueta</summary>
+          <div class="fgrid">
+            <div class="f"><label for="eCli">Cliente</label><input id="eCli" maxlength="80" autocomplete="off"></div>
+            <div class="f"><label for="eCodCli">Cód. do cliente</label><input id="eCodCli" maxlength="60" autocomplete="off"></div>
+            <div class="f"><label for="ePa">PA</label><input id="ePa" maxlength="20" autocomplete="off"></div>
+            <div class="f"><label for="eLote">Lote (CQ/QC)</label><input id="eLote" maxlength="20" autocomplete="off"></div>
+            <div class="f"><label for="eQtd">Quantidade</label><input id="eQtd" type="number" min="0" step="1" inputmode="numeric"></div>
+            <div class="f"><label for="eDataE">Data da etiqueta</label><input id="eDataE" type="date"></div>
+          </div>
+        </details>
+        <p class="mut" id="eMeta"></p>
+        <details><summary>Histórico</summary><ul id="eHist" class="mut"></ul></details>
+      </div>
+
+      <div class="edBar">
+        <button type="button" id="eSave" class="pri">Salvar</button>
+        <button type="button" id="eCancel">Fechar</button>
+        <button type="button" id="eDup">Duplicar</button>
+        <button type="button" id="eHide">Ocultar</button>
+        <button type="button" id="eDel" class="danger">Excluir</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<datalist id="locs"></datalist>
+<dialog id="dlg"><form method="dialog" id="dlgbody"></form></dialog>
+<div id="toast" hidden role="status"></div>
+
+<script src="app.js" defer></script>
+<script src="etiquetas.js" defer></script>
+</body>
+</html>
